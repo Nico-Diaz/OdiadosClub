@@ -1,0 +1,30 @@
+---
+import Badge from '../ui/Badge.astro';
+const { name, description, price, image, tags } = Astro.props;
+---
+<article class="card">
+  <div class="info">
+    <div class="header">
+      <h3>{name}</h3>
+      <span class="price">${price}</span>
+    </div>
+    <p>{description}</p>
+    
+    <!-- Renderizado dinámico de etiquetas -->
+    <div class="tags">
+      {tags.includes('picante') && <Badge type="picante">🌶️ Hot</Badge>}
+      {tags.includes('vegetariano') && <Badge type="veggie">🥬 Veggie</Badge>}
+    </div>
+  </div>
+  
+  <div class="image">
+    <img src={image} alt={name} loading="lazy" />
+  </div>
+</article>
+
+<style>
+  /* Estilos tipo "Grid" o "Flex" para que se vea bien en móvil */
+  .card { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding: 15px 0; }
+  .image img { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; }
+  /* ... resto de estilos */
+</style>
