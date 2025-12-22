@@ -1,46 +1,41 @@
-# Astro Starter Kit: Basics
+# 🍔 Odiados Club - Blacklist Menu
 
-```sh
-npm create astro@latest -- --template basics
-```
+> **"Hamburguesas canceladas, censuradas y deliciosas."**
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Este proyecto es una Landing Page y Menú Digital interactivo para una hamburguesería con estética **Grunge / Underground**. No es solo una carta estática; incluye un sistema de carrito de compras en tiempo real y un backend serverless que registra pedidos en Google Sheets y redirige a WhatsApp.
 
-## 🚀 Project Structure
+![Project Preview](https://via.placeholder.com/800x400?text=Preview+del+Proyecto)
+*(Puedes reemplazar este link con una captura real de tu web)*
 
-Inside of your Astro project, you'll see the following folders and files:
+## 🚀 Características
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+- **Diseño UI/UX Temático:** Estética "Blacklist" con tipografías góticas/display, texturas y paleta de colores agresiva (Rojo/Negro).
+- **Mobile First:** Diseño optimizado para celulares (restricción visual a 900px en escritorio).
+- **Carrito de Compras (State Management):** Gestión de estado global utilizando **Nano Stores** para persistencia de datos ligera.
+- **Backend Integration:** API Endpoint en Astro (`SSR`) que conecta con **Google Sheets** para usarlo como base de datos.
+- **WhatsApp Checkout:** Generación automática de mensajes pre-llenados con el detalle del pedido.
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## 🛠️ Tech Stack
 
-## 🧞 Commands
+- **Framework:** [Astro 5.0](https://astro.build/) (Server Side Rendering habilitado).
+- **Lenguaje:** TypeScript.
+- **Estilos:** CSS Variables (Custom Properties) & Fonts personalizadas.
+- **Estado:** [Nano Stores](https://github.com/nanostores/nanostores).
+- **Database/API:** Google Sheets API + `google-auth-library`.
+- **Adapter:** Node.js.
 
-All commands are run from the root of the project, from a terminal:
+## 📂 Estructura del Proyecto
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```bash
+src/
+├── components/
+│   ├── menu/        # Tarjetas de productos y lógica de UI
+│   ├── ui/          # Carrito flotante (FloatingCart) y badges
+│   └── layout/      # Header y Footer
+├── data/            # Datos estáticos del menú (JSON/TS)
+├── layouts/         # Layout principal con restricciones CSS
+├── pages/
+│   ├── api/         # Endpoints de servidor (Google Sheets Logic)
+│   └── index.astro  # Página principal
+├── store/           # Lógica del carrito (Nano Stores)
+└── styles/          # Variables CSS globales y fuentes
