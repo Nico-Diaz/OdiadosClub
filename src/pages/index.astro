@@ -1,11 +1,113 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import Header from '../components/layout/Header.astro';
+import ProductCard from '../components/menu/ProductCard.astro';
+import { menuData } from '../data/menu-data';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Filtramos las burgers de la Blacklist
+const blacklist = menuData.filter(p => p.category === 'blacklist');
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Odiados Club | Menú">
+    <Header />
+
+    <section class="hero">
+        <div class="hero-content">
+            <span class="subtitle">NO APTO PARA SENSIBLES</span>
+            <h1 class="title font-gothic">THE<br>BLACKLIST</h1>
+            <a href="#menu" class="cta-button font-gothic">VER CARTA</a>
+        </div>
+        <div class="overlay"></div>
+    </section>
+
+    <section id="menu" class="menu-section">
+        <h2 class="section-title font-gothic">BLACKLIST</h2>
+        <div class="grid-container">
+            {blacklist.map(product => (
+                <ProductCard product={product} />
+            ))}
+        </div>
+    </section>
 </Layout>
+
+<style>
+  /* HERO STYLES */
+  .hero {
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    background-image: radial-gradient(circle at center, #333 0%, #000 100%);
+    overflow: hidden;
+    border-bottom: 4px solid var(--color-red);
+  }
+
+  /* Ruido visual de fondo (opcional) */
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+');
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    z-index: 1;
+    padding: 0 1rem;
+  }
+
+  .subtitle {
+    color: var(--color-red);
+    letter-spacing: 0.3em;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .title {
+    font-size: 4rem;
+    line-height: 0.9;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 20px rgba(214,0,0,0.5); /* Resplandor */
+  }
+
+  .cta-button {
+    display: inline-block;
+    background-color: var(--color-red);
+    color: var(--color-white);
+    padding: 1rem 2rem;
+    text-decoration: none;
+    font-size: 1.5rem;
+    transition: background 0.3s;
+  }
+  
+  .cta-button:hover {
+    background-color: var(--color-white);
+    color: var(--color-black);
+  }
+
+  /* MENU SECTION STYLES */
+  .menu-section {
+    padding: 3rem 1.5rem;
+    background-color: var(--color-black);
+  }
+
+  .section-title {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--color-red);
+    border-bottom: 1px solid var(--color-red);
+    padding-bottom: 10px;
+  }
+
+  .grid-container {
+    display: grid;
+    /* Grid responsive: 1 columna en móvil, 2 si hay espacio */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+</style>

@@ -1,0 +1,33 @@
+---
+// src/components/ui/Badge.astro
+interface Props {
+  type: 'vegano' | 'picante' | 'sin-tacc';
+}
+
+const { type } = Astro.props;
+
+const badgeConfig = {
+  vegano: {
+    label: 'Vegano',
+    icon: '🌱',
+    class: 'bg-green-100 text-green-800 border-green-300'
+  },
+  picante: {
+    label: 'Picante',
+    icon: '🌶️',
+    class: 'bg-red-100 text-red-800 border-red-300'
+  },
+  'sin-tacc': {
+    label: 'Sin TACC',
+    icon: '🌾',
+    class: 'bg-blue-100 text-blue-800 border-blue-300'
+  }
+};
+
+const config = badgeConfig[type];
+---
+
+<span class={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.class}`}>
+  <span>{config.icon}</span>
+  <span>{config.label}</span>
+</span>

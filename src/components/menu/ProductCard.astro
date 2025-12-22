@@ -1,30 +1,167 @@
 ---
-import Badge from '../ui/Badge.astro';
-const { name, description, price, image, tags } = Astro.props;
+// Importamos la definición del tipo de dato para que Astro sepa qué es "product"
+import type { Product } from '../../data/menu-data';
+
+interface Props {
+    product: Product;
+}
+
+const { product } = Astro.props;
 ---
-<article class="card">
-  <div class="info">
-    <div class="header">
-      <h3>{name}</h3>
-      <span class="price">${price}</span>
+
+<article class="product-card">
+    <div class="card-content">
+        <header class="card-header">
+            <h3 class="product-name font-gothic">{product.name}</h3>
+            
+            {product.isNew && <span class="badge-new">NUEVO</span>}
+        </header>
+
+        <div class="separator"></div>
+        
+        <p class="description">{product.description}</p>
+        
+        <footer class="card-footer">
+            <span class="price">${product.price}</span>
+            
+            <button 
+                class="btn-add"
+                data-id={product.id}
+                data-name={product.name}
+                data-price={product.price}
+            >
+                + AGREGAR
+            </button>
+        </footer>
     </div>
-    <p>{description}</p>
-    
-    <!-- Renderizado dinámico de etiquetas -->
-    <div class="tags">
-      {tags.includes('picante') && <Badge type="picante">🌶️ Hot</Badge>}
-      {tags.includes('vegetariano') && <Badge type="veggie">🥬 Veggie</Badge>}
-    </div>
-  </div>
-  
-  <div class="image">
-    <img src={image} alt={name} loading="lazy" />
-  </div>
 </article>
 
+<script>
+    // Importamos la función de la tienda
+    import { addProduct } from '../../store/cart';
+
+    // Seleccionamos todos los botones de la página
+    const buttons = document.querySelectorAll('.btn-add');
+
+    // Recorremos cada botón para agregarle el evento click
+    buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            // Obtenemos los datos guardados en el HTML (data-*)
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name');
+            const price = btn.getAttribute('data-price');
+
+            // Verificamos que los datos existan (seguridad de TypeScript)
+            if (id && name && price) {
+                // Llamamos a la función del store
+                addProduct({
+                    id: id,
+                    name: name,
+                    price: Number(price) // Convertimos el precio de texto a número
+                });
+            }
+        });
+    });
+</script>
+
 <style>
-  /* Estilos tipo "Grid" o "Flex" para que se vea bien en móvil */
-  .card { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding: 15px 0; }
-  .image img { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; }
-  /* ... resto de estilos */
+  /* ESTILOS (CSS Standard con variables) */
+  
+  .product-card {
+    position: relative;
+    /* Efecto de sombra dura roja desplazada */
+    box-shadow: 6px 6px 0px var(--color-red);
+    background-color: var(--color-dark-gray);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.1s, box-shadow 0.1s;
+    height: 100%; /* Para que todas las cards tengan la misma altura */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Efecto al presionar (click) */
+  .product-card:active {
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0px var(--color-red);
+  }
+
+  .card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .product-name {
+    font-size: 2rem;
+    margin: 0;
+    line-height: 0.9;
+    text-transform: uppercase;
+    color: var(--color-white);
+  }
+
+  .badge-new {
+    background-color: var(--color-red);
+    color: var(--color-black);
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    font-family: var(--font-sans);
+    letter-spacing: 1px;
+  }
+
+  .separator {
+    height: 2px;
+    width: 40px;
+    background-color: var(--color-red);
+    margin: 0.8rem 0 1rem 0;
+  }
+
+  .description {
+    color: var(--color-gray-text);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 2rem;
+    flex-grow: 1; /* Empuja el footer hacia abajo */
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: auto;
+  }
+
+  .price {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--color-white);
+    font-family: var(--font-sans);
+  }
+
+  .btn-add {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: var(--color-white);
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-family: var(--font-sans);
+    transition: all 0.2s;
+  }
+  
+  .btn-add:hover {
+    background-color: var(--color-white);
+    color: var(--color-black);
+    border-color: var(--color-white);
+  }
 </style>
