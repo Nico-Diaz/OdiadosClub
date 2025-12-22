@@ -4,7 +4,7 @@ import node from '@astrojs/node';
 import vercel from '@astrojs/vercel';
 
 export default defineConfig({
- // output: 'server',
+  output: 'server',
 
- //adapter: vercel(),
+  adapter: vercel(),
 });
