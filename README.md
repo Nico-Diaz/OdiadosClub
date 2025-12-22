@@ -1,13 +1,11 @@
-# 🍔 Odiados Club - Blacklist Menu
+#  Odiados Club - Blacklist Menu
 
 > **"Hamburguesas canceladas, censuradas y deliciosas."**
 
 Este proyecto es una Landing Page y Menú Digital interactivo para una hamburguesería con estética **Grunge / Underground**. No es solo una carta estática; incluye un sistema de carrito de compras en tiempo real y un backend serverless que registra pedidos en Google Sheets y redirige a WhatsApp.
 
-![Project Preview](https://via.placeholder.com/800x400?text=Preview+del+Proyecto)
-*(Puedes reemplazar este link con una captura real de tu web)*
 
-## 🚀 Características
+##  Características
 
 - **Diseño UI/UX Temático:** Estética "Blacklist" con tipografías góticas/display, texturas y paleta de colores agresiva (Rojo/Negro).
 - **Mobile First:** Diseño optimizado para celulares (restricción visual a 900px en escritorio).
@@ -15,7 +13,7 @@ Este proyecto es una Landing Page y Menú Digital interactivo para una hamburgue
 - **Backend Integration:** API Endpoint en Astro (`SSR`) que conecta con **Google Sheets** para usarlo como base de datos.
 - **WhatsApp Checkout:** Generación automática de mensajes pre-llenados con el detalle del pedido.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Framework:** [Astro 5.0](https://astro.build/) (Server Side Rendering habilitado).
 - **Lenguaje:** TypeScript.
@@ -24,7 +22,7 @@ Este proyecto es una Landing Page y Menú Digital interactivo para una hamburgue
 - **Database/API:** Google Sheets API + `google-auth-library`.
 - **Adapter:** Node.js.
 
-## 📂 Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```bash
 src/
