@@ -5,11 +5,13 @@ import { JWT } from 'google-auth-library';
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { items, total } = body;
+    const { items } = body; // Solo recibimos los items, el total lo calculamos nosotros
 
     // 1. Autenticación con Google
     // Limpiamos la clave privada para evitar errores con los saltos de línea (\n)
-    const privateKey = import.meta.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    const privateKey = import.meta.env.GOOGLE_PRIVATE_KEY
+      ? import.meta.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      : undefined;
 
     const serviceAccountAuth = new JWT({
       email: import.meta.env.GOOGLE_CLIENT_EMAIL,
@@ -23,26 +25,44 @@ export const POST: APIRoute = async ({ request }) => {
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0]; // La primera hoja del Excel
 
-    // 3. Crear datos
-    const orderId = `OD-${Math.floor(Math.random() * 10000)}`; // ID: OD-4521
+    // 3. Crear datos del pedido
+    const orderId = `OD-${Math.floor(Math.random() * 10000)}`;
+    // Hora argentina
     const date = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
     
-    // Convertimos la lista de items en un texto bonito
+    // --- CÁLCULO DEL TOTAL (BACKEND) ---
+    // Calculamos el precio aquí para que sea seguro y no llegue vacío
+    const calculatedTotal = items.reduce((acc: number, item: any) => {
+        return acc + (Number(item.price) * Number(item.quantity));
+    }, 0);
+
+    // Formatear la lista de productos
     const itemsDetail = items.map((i: any) => `${i.quantity}x ${i.name}`).join('\n');
 
-    // 4. Guardar en Excel (Asegúrate que tu Excel tenga estas columnas en la fila 1)
-    await sheet.addRow({
-      ID: orderId,
-      Fecha: date,
-      Detalle: itemsDetail,
-      Total: total,
-      Estado: 'Pendiente'
-    });
+    // 4. Guardar en Excel (Método Array para evitar errores de nombres)
+    // Orden: Columna A, Columna B, Columna C, Columna D, Columna E
+    await sheet.addRow([
+      orderId,
+      date,
+      itemsDetail,
+      `$${calculatedTotal}`, // Guardamos el total calculado
+      'Pendiente'
+    ]);
 
     // 5. Crear link de WhatsApp
-    // ¡CAMBIA ESTE NÚMERO POR EL TUYO!
-    const myPhone = "5491100000000"; 
-    const message = `Hola Odiados! Pedido *${orderId}*.\n\n${itemsDetail}\n\n*Total: $${total}*`;
+    const myPhone = "5492612461691"; 
+    
+    // Usamos \n para los saltos de línea
+    const message = 
+      ` *NUEVO PEDIDO BLACKLIST* \n\n` +
+      `Hola Odiados! Quiero confirmar mi orden *#${orderId}*.\n\n` +
+      ` *EL MENÚ ELEGIDO:*\n` +
+      `-----------------------------------\n` +
+      `${itemsDetail}\n` +
+      `-----------------------------------\n\n` +
+      ` *TOTAL FINAL: $${calculatedTotal}*\n\n` +
+      ` _En un momento enviare mi dirección y confirmación del pago._`;
+
     const whatsappUrl = `https://wa.me/${myPhone}?text=${encodeURIComponent(message)}`;
 
     return new Response(JSON.stringify({ 
