@@ -19,21 +19,21 @@ export const menuData: Product[] = [
     {
         id: '2',
         name: 'Clickbait',
-        description: 'Doble carne, triple de parmesano crocante, mayonesa especial, salsa antipatica.',
+        description: 'Carne, triple de parmesano crocante, mayonesa especial, salsa antipatica.',
         price: 14000,
         category: 'blacklist'
     },
     {
         id: '3',
         name: 'Shadowban',
-        description: 'Doble carne, queso cheddar, salsa tasty, bacon.',
+        description: 'Carne, queso cheddar, salsa tasty, bacon.',
         price: 13000,
         category: 'blacklist'
     },
     {
         id: '4',
         name: 'Cancelada',
-        description: 'Simple, doble o triple carne, cheddar, salsa envidia, bacon.',
+        description: 'Carne, cheddar, salsa envidia, bacon.',
         price: 14000,
         category: 'blacklist'
     }
