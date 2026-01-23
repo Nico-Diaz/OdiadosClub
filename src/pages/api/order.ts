@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
     ]);
 
     // 5. Crear link de WhatsApp
-    const myPhone = "5492612461691"; 
+    const myPhone = "5492615084928"; 
     
     // Usamos \n para los saltos de línea
     const message = 
@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
       `${itemsDetail}\n` +
       `-----------------------------------\n\n` +
       ` *TOTAL FINAL: $${calculatedTotal}*\n\n` +
-      ` _En un momento enviare mi dirección y confirmación del pago._`;
+      ` _Espero confirmación para enviar mi ubicación._`;
 
     const whatsappUrl = `https://wa.me/${myPhone}?text=${encodeURIComponent(message)}`;
 

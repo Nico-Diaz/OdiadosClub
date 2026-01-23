@@ -1,5 +1,4 @@
 ---
-// Importamos la definición del tipo de dato para que Astro sepa qué es "product"
 import type { Product } from '../../data/menu-data';
 
 interface Props {
@@ -7,13 +6,15 @@ interface Props {
 }
 
 const { product } = Astro.props;
+
+// Detectamos si es la hamburguesa especial
+const isCancelada = product.name.toLowerCase().includes('cancelada');
 ---
 
-<article class="product-card">
+<article class="product-card" data-base-price={product.price} data-is-special={isCancelada}>
     <div class="card-content">
         <header class="card-header">
             <h3 class="product-name font-gothic">{product.name}</h3>
-            
             {product.isNew && <span class="badge-new">NUEVO</span>}
         </header>
 
@@ -21,8 +22,19 @@ const { product } = Astro.props;
         
         <p class="description">{product.description}</p>
         
+        {isCancelada && (
+            <div class="meat-selector">
+                <span class="selector-label">CARNES:</span>
+                <div class="options">
+                    <button class="btn-option active" data-multiplier="1">1</button>
+                    <button class="btn-option" data-multiplier="2">2</button>
+                    <button class="btn-option" data-multiplier="3">3</button>
+                </div>
+            </div>
+        )}
+
         <footer class="card-footer">
-            <span class="price">${product.price}</span>
+            <span class="price display-price">${product.price}</span>
             
             <button 
                 class="btn-add"
@@ -37,27 +49,74 @@ const { product } = Astro.props;
 </article>
 
 <script>
-    // Importamos la función de la tienda
     import { addProduct } from '../../store/cart';
 
-    // Seleccionamos todos los botones de la página
+    // CONFIGURACIÓN: ¿Cuánto cuesta cada carne extra?
+    const EXTRA_MEAT_PRICE = 2000; // <--- CAMBIA ESTO AL PRECIO QUE QUIERAS
+
+    // 1. Lógica para las tarjetas especiales (Cancelada)
+    const specialCards = document.querySelectorAll('.product-card[data-is-special="true"]');
+
+    specialCards.forEach(card => {
+        const basePrice = Number(card.getAttribute('data-base-price'));
+        const displayPrice = card.querySelector('.display-price');
+        const addButton = card.querySelector('.btn-add');
+        const options = card.querySelectorAll('.btn-option');
+        const originalName = addButton?.getAttribute('data-name');
+
+        options.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                // 1. Estilos visuales
+                options.forEach(o => o.classList.remove('active'));
+                const target = e.target as HTMLElement;
+                target.classList.add('active');
+
+                // 2. Calcular Precio
+                const multiplier = Number(target.getAttribute('data-multiplier'));
+                let finalPrice = basePrice;
+                let nameSuffix = "";
+
+                if (multiplier === 2) {
+                    finalPrice = basePrice + EXTRA_MEAT_PRICE;
+                    nameSuffix = " (Doble)";
+                } else if (multiplier === 3) {
+                    finalPrice = basePrice + (EXTRA_MEAT_PRICE * 2);
+                    nameSuffix = " (Triple)";
+                }
+
+                // 3. Actualizar UI
+                if (displayPrice) displayPrice.textContent = `$${finalPrice}`;
+                
+                // 4. Actualizar datos del botón AGREGAR (Para que vaya bien al carrito)
+                if (addButton) {
+                    addButton.setAttribute('data-price', finalPrice.toString());
+                    addButton.setAttribute('data-name', `${originalName}${nameSuffix}`);
+                }
+            });
+        });
+    });
+
+    // 2. Lógica General de Agregar al Carrito (Igual que antes)
     const buttons = document.querySelectorAll('.btn-add');
 
-    // Recorremos cada botón para agregarle el evento click
     buttons.forEach((btn) => {
         btn.addEventListener('click', () => {
-            // Obtenemos los datos guardados en el HTML (data-*)
             const id = btn.getAttribute('data-id');
             const name = btn.getAttribute('data-name');
             const price = btn.getAttribute('data-price');
 
-            // Verificamos que los datos existan (seguridad de TypeScript)
-            if (id && name && price) {
-                // Llamamos a la función del store
+            // Creamos un ID único compuesto si es una hamburguesa con variantes
+            // Esto evita que "Cancelada Simple" y "Cancelada Doble" se sumen como el mismo producto
+            let finalId = id;
+            if (name && name.includes('(')) {
+                finalId = `${id}-${name.split('(')[1].replace(')', '').toLowerCase()}`;
+            }
+
+            if (finalId && name && price) {
                 addProduct({
-                    id: id,
+                    id: finalId,
                     name: name,
-                    price: Number(price) // Convertimos el precio de texto a número
+                    price: Number(price)
                 });
             }
         });
@@ -65,21 +124,18 @@ const { product } = Astro.props;
 </script>
 
 <style>
-  /* ESTILOS (CSS Standard con variables) */
-  
+  /* ESTILOS BASE */
   .product-card {
     position: relative;
-    /* Efecto de sombra dura roja desplazada */
     box-shadow: 6px 6px 0px var(--color-red);
     background-color: var(--color-dark-gray);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: transform 0.1s, box-shadow 0.1s;
-    height: 100%; /* Para que todas las cards tengan la misma altura */
+    height: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  /* Efecto al presionar (click) */
   .product-card:active {
     transform: translate(3px, 3px);
     box-shadow: 3px 3px 0px var(--color-red);
@@ -128,9 +184,60 @@ const { product } = Astro.props;
     color: var(--color-gray-text);
     font-size: 0.95rem;
     line-height: 1.4;
-    margin-bottom: 2rem;
-    flex-grow: 1; /* Empuja el footer hacia abajo */
+    margin-bottom: 1rem; /* Reducido un poco para dar espacio al selector */
+    flex-grow: 1;
   }
+
+  /* --- ESTILOS DEL SELECTOR DE CARNES --- */
+  .meat-selector {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.3);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .selector-label {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: bold;
+  }
+
+  .options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #555;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .btn-option:hover {
+    border-color: var(--color-red);
+    color: var(--color-red);
+  }
+
+  .btn-option.active {
+    background: var(--color-red);
+    border-color: var(--color-red);
+    color: black;
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+  }
+  /* ------------------------------------- */
 
   .card-footer {
     display: flex;
