@@ -11,8 +11,8 @@ export const menuData: Product[] = [
     {
         id: '1',
         name: 'Public Enemy',
-        description: 'Doble carne, queso cheddar, bacon, cebolla caramelizada, queso azul, salsa antipática.',
-        price: 14000,
+        description: 'Carne, queso cheddar, bacon, cebolla caramelizada, queso azul, salsa antipática.',
+        price: 12000,
         category: 'blacklist',
         isNew: true
     },
@@ -20,21 +20,21 @@ export const menuData: Product[] = [
         id: '2',
         name: 'Clickbait',
         description: 'Doble carne, triple de parmesano crocante, mayonesa especial, salsa antipatica.',
-        price: 13000,
+        price: 14000,
         category: 'blacklist'
     },
     {
         id: '3',
         name: 'Shadowban',
         description: 'Doble carne, queso cheddar, salsa tasty, bacon.',
-        price: 12000,
+        price: 13000,
         category: 'blacklist'
     },
     {
         id: '4',
         name: 'Cancelada',
         description: 'Simple, doble o triple carne, cheddar, salsa envidia, bacon.',
-        price: 13000,
+        price: 14000,
         category: 'blacklist'
     }
 ];
