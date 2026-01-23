@@ -1,48 +1,80 @@
 <div id="cart-container" class="cart-wrapper hidden">
-    <div class="cart-summary">
-        <button id="btn-cancel" class="btn-cancel" aria-label="Cancelar y vaciar carrito">
-            ✕
-        </button>
+    <div class="cart-deco-top"></div>
 
-        <span class="font-gothic text-xl ml-2">TOTAL: $<span id="cart-total">0</span></span>
+    <div class="cart-inner">
         
-        <button id="btn-checkout" class="btn-checkout">CONFIRMAR</button>
+        <div class="delivery-section">
+            <label for="delivery-method" class="delivery-label">MÉTODO DE ENTREGA:</label>
+            <div class="select-wrapper">
+                <select id="delivery-method" class="delivery-select">
+                    <option value="Take Away">🥡 RETIRO POR LOCAL</option>
+                    <option value="Delivery">🛵 ENVÍO A DOMICILIO</option>
+                </select>
+                <span class="select-arrow">▼</span>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            
+            <div class="info-group">
+                <button id="btn-cancel" class="btn-cancel" title="Vaciar carrito">✕</button>
+                <div class="total-wrapper">
+                    <span class="total-label">TOTAL ESTIMADO</span>
+                    <span class="total-amount">$<span id="cart-total">0</span></span>
+                </div>
+            </div>
+            
+            <button id="btn-checkout" class="btn-checkout">
+                CONFIRMAR <span class="arrow">→</span>
+            </button>
+        </div>
     </div>
 </div>
 
 <script>
     import { cartItems } from '../../store/cart';
 
+    // Referencias seguras al DOM
     const container = document.getElementById('cart-container');
     const totalSpan = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('btn-checkout');
     const cancelBtn = document.getElementById('btn-cancel');
 
-    // Escuchamos cambios en el carrito
-    cartItems.subscribe(items  => {
+    // 1. ESCUCHAR CAMBIOS EN EL CARRITO
+    cartItems.subscribe(items => {
+        if (!container) return; // Protección
+
         if (items.length > 0) {
-            container?.classList.remove('hidden');
+            container.classList.remove('hidden');
+            // Calcular Total
             const total = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            if (totalSpan) totalSpan.innerText = total.toString();
+            if (totalSpan) totalSpan.innerText = total.toLocaleString(); // Agrega puntos de mil (12.000)
         } else {
-            container?.classList.add('hidden');
+            container.classList.add('hidden');
         }
     });
 
-    // 2. Lógica del Botón CANCELAR (X)
+    // 2. BOTÓN CANCELAR
     cancelBtn?.addEventListener('click', () => {
-        cartItems.set([]);
+        // Usamos confirm nativo
+        if(confirm('¿Borrar todo el pedido?')) {
+            cartItems.set([]); 
+        }
     });
-        // Preguntar antes de borrar (Opcional, si quieres que sea directo borra el confirm);
 
-    // 3. Lógica de Confirmar Pedido (Backend + WhatsApp)
+    // 3. BOTÓN CONFIRMAR (CHECKOUT)
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', async () => {
             const items = cartItems.get();
             if (items.length === 0) return;
-            
-            const originalText = checkoutBtn.innerText;
-            checkoutBtn.innerText = "PROCESANDO...";
+
+            // Obtener envío
+            const deliverySelect = document.getElementById('delivery-method') as HTMLSelectElement;
+            const deliveryMethod = deliverySelect ? deliverySelect.value : 'No especificado';
+
+            // UI de carga
+            const originalText = checkoutBtn.innerHTML;
+            checkoutBtn.innerText = "ENVIANDO...";
             checkoutBtn.setAttribute('disabled', 'true');
             checkoutBtn.style.opacity = '0.7';
 
@@ -50,99 +82,205 @@
                 const response = await fetch('/api/order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items }),
+                    body: JSON.stringify({ 
+                        items: items, 
+                        deliveryMethod: deliveryMethod 
+                    }), 
                 });
 
                 const data = await response.json();
                 
                 if (data.success) {
-                    cartItems.set([]); 
-                    window.location.href = data.redirectUrl; 
+                    cartItems.set([]); // Vaciar
+                    window.location.href = data.redirectUrl; // Ir a WhatsApp
                 } else {
-                    alert('Error: ' + (data.error || 'No se pudo procesar'));
-                    resetBtn(originalText);
+                    alert('Error del servidor: ' + (data.error || 'Desconocido'));
+                    restoreBtn();
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error de conexión.');
-                resetBtn(originalText);
+                alert('Error de conexión. Revisa tu internet.');
+                restoreBtn();
+            }
+
+            function restoreBtn() {
+                if(checkoutBtn) {
+                    checkoutBtn.innerHTML = originalText;
+                    checkoutBtn.removeAttribute('disabled');
+                    checkoutBtn.style.opacity = '1';
+                }
             }
         });
-
-        function resetBtn(text: string) {
-            if (checkoutBtn) {
-                checkoutBtn.innerText = text;
-                checkoutBtn.removeAttribute('disabled');
-                checkoutBtn.style.opacity = '1';
-            }
-        }
     }
 </script>
 
 <style>
+    /* --- CONTENEDOR FLOTANTE --- */
     .cart-wrapper {
         position: fixed;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        width: 95%; /* Un poco más ancho para que quepa la X */
-        max-width: 420px;
+        width: 95%;
+        max-width: 500px; /* Un poco más ancho para que entre todo */
         z-index: 1000;
-        animation: slideUp 0.3s ease-out;
+        animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Rebote suave al subir */
+        font-family: 'Arial', sans-serif; /* O tu fuente global */
     }
 
-    .hidden { display: none; }
+    .hidden { display: none !important; }
 
-    .cart-summary {
-        background-color: var(--color-red);
-        color: var(--color-black);
-        padding: 0.8rem; /* Un poco menos de padding para ajustar */
+    .cart-inner {
+        background-color: #111;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        border: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cart-deco-top {
+        height: 4px;
+        background: var(--color-red, #dc2626);
+        width: 100%;
+        box-shadow: 0 0 10px var(--color-red, #dc2626);
+    }
+
+    /* --- 1. SECCIÓN ENVÍO (Arriba) --- */
+    .delivery-section {
+        background-color: #0a0a0a;
+        padding: 8px 15px;
+        border-bottom: 1px solid #222;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .delivery-label {
+        font-size: 0.7rem;
+        color: #666;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .select-wrapper {
+        position: relative;
+        flex-grow: 1;
+    }
+
+    .delivery-select {
+        width: 100%;
+        background: transparent;
+        color: white;
+        border: none;
+        font-size: 0.9rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        cursor: pointer;
+        outline: none;
+        appearance: none; /* Borra la flecha fea por defecto */
+        text-align: right;
+        padding-right: 20px;
+    }
+    
+    .delivery-select option { background: black; }
+
+    .select-arrow {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-red, #dc2626);
+        font-size: 0.7rem;
+        pointer-events: none;
+    }
+
+    /* --- 2. SECCIÓN DE ACCIONES (Abajo) --- */
+    .actions-section {
+        padding: 12px 15px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border: 2px solid var(--color-black);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        gap: 10px; /* Espacio entre elementos */
     }
 
-    .btn-checkout {
-        background-color: var(--color-black);
-        color: var(--color-white);
-        border: none;
-        padding: 0.5rem 1rem;
-        font-family: var(--font-gothic);
-        font-size: 1.1rem;
-        cursor: pointer;
-        white-space: nowrap; /* Que el texto no se rompa */
-        transition: opacity 0.3s;
+    /* Grupo Izquierdo */
+    .info-group {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
-    /* ESTILO DE LA CRUZ */
+    /* Botón X */
     .btn-cancel {
-        background: transparent;
-        border: 2px solid var(--color-black);
-        color: var(--color-black);
-        width: 35px;
-        height: 35px;
-        border-radius: 50%; /* Redondo */
-        font-weight: bold;
-        font-size: 1.2rem;
+        width: 30px;
+        height: 30px;
+        background: #222;
+        border: 1px solid #444;
+        color: #888;
+        border-radius: 50%;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
+        font-weight: bold;
         transition: all 0.2s;
-        flex-shrink: 0; /* Para que no se aplaste si hay poco espacio */
+    }
+    .btn-cancel:hover {
+        background: var(--color-red, #dc2626);
+        color: white;
+        border-color: var(--color-red, #dc2626);
+        transform: rotate(90deg);
     }
 
-    .btn-cancel:hover {
-        background-color: var(--color-black);
-        color: var(--color-red); /* Invierte colores al pasar el mouse */
-        transform: rotate(90deg); /* Efecto giratorio */
+    /* Precios */
+    .total-wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+    .total-label {
+        font-size: 0.6rem;
+        color: #666;
+        letter-spacing: 1px;
+    }
+    .total-amount {
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: white;
+        line-height: 1;
+    }
+
+    /* BOTÓN CONFIRMAR */
+    .btn-checkout {
+        background-color: var(--color-red, #dc2626);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 0 rgba(100, 0, 0, 0.5); /* Botón con volumen */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-checkout:hover {
+        background-color: white;
+        color: black;
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
+    }
+    
+    .btn-checkout:active {
+        transform: translateY(4px);
+        box-shadow: none;
     }
 
     @keyframes slideUp {
-        from { transform: translate(-50%, 100%); }
-        to { transform: translate(-50%, 0); }
+        from { transform: translate(-50%, 100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
     }
 </style>

@@ -7,268 +7,190 @@ interface Props {
 
 const { product } = Astro.props;
 
-// Detectamos si es la hamburguesa especial
-const isCancelada = product.name.toLowerCase().includes('cancelada');
+// Configuramos los precios aquí
+const EXTRA_MEAT_PRICE = 2000;
+const EXTRA_CHEESE_PRICE = 1000;
 ---
 
-<article class="product-card" data-base-price={product.price} data-is-special={isCancelada}>
-    <div class="card-content">
+<article 
+    class="product-card" 
+    data-base-price={product.price}
+    data-extra-meat={EXTRA_MEAT_PRICE}
+    data-extra-cheese={EXTRA_CHEESE_PRICE}
+>
+    
+    <div class="card-upper">
         <header class="card-header">
             <h3 class="product-name font-gothic">{product.name}</h3>
             {product.isNew && <span class="badge-new">NUEVO</span>}
         </header>
 
         <div class="separator"></div>
-        
         <p class="description">{product.description}</p>
-        
-        {isCancelada && (
-            <div class="meat-selector">
-                <span class="selector-label">CARNES:</span>
-                <div class="options">
-                    <button class="btn-option active" data-multiplier="1">1</button>
-                    <button class="btn-option" data-multiplier="2">2</button>
-                    <button class="btn-option" data-multiplier="3">3</button>
-                </div>
-            </div>
-        )}
-
-        <footer class="card-footer">
-            <span class="price display-price">${product.price}</span>
-            
-            <button 
-                class="btn-add"
-                data-id={product.id}
-                data-name={product.name}
-                data-price={product.price}
-            >
-                + AGREGAR
-            </button>
-        </footer>
     </div>
+
+    <div class="customizer-panel">
+        <div class="panel-label">PERSONALIZAR:</div>
+        
+        <div class="selector-row">
+            <span class="option-label"><span class="icon">🥩</span> CARNE</span>
+            <div class="option-buttons meat-options">
+                <button class="btn-selector active" data-type="meat" data-qty="2">DOBLE</button>
+                <button class="btn-selector" data-type="meat" data-qty="3">TRIPLE</button>
+            </div>
+        </div>
+
+        <div class="selector-row">
+            <span class="option-label"><span class="icon">🧀</span> CHEDDAR</span>
+            <div class="option-buttons cheese-options">
+                <button class="btn-selector active" data-type="cheese" data-qty="2">DOBLE</button>
+                <button class="btn-selector" data-type="cheese" data-qty="3">TRIPLE</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="card-footer">
+        <div class="price-container">
+            <span class="price-label">PRECIO FINAL:</span>
+            <span class="price display-price">${product.price}</span>
+        </div>
+        
+        <button 
+            class="btn-add-cart"
+            data-id={product.id}
+            data-name={product.name}
+            data-price={product.price}
+            data-base-name={product.name}
+        >
+            AGREGAR AL PEDIDO
+        </button>
+    </footer>
 </article>
 
 <script>
+    // Ahora sí podemos importar sin problemas porque quitamos el define:vars
     import { addProduct } from '../../store/cart';
 
-    // CONFIGURACIÓN: ¿Cuánto cuesta cada carne extra?
-    const EXTRA_MEAT_PRICE = 2000; // <--- CAMBIA ESTO AL PRECIO QUE QUIERAS
+    // Seleccionamos todas las tarjetas
+    const cards = document.querySelectorAll('.product-card');
 
-    // 1. Lógica para las tarjetas especiales (Cancelada)
-    const specialCards = document.querySelectorAll('.product-card[data-is-special="true"]');
-
-    specialCards.forEach(card => {
+    cards.forEach(card => {
+        // LEEMOS LOS DATOS DEL HTML (Más seguro)
         const basePrice = Number(card.getAttribute('data-base-price'));
+        const priceExtraMeat = Number(card.getAttribute('data-extra-meat'));
+        const priceExtraCheese = Number(card.getAttribute('data-extra-cheese'));
+        
         const displayPrice = card.querySelector('.display-price');
-        const addButton = card.querySelector('.btn-add');
-        const options = card.querySelectorAll('.btn-option');
-        const originalName = addButton?.getAttribute('data-name');
+        const addButton = card.querySelector('.btn-add-cart');
+        const baseName = addButton?.getAttribute('data-base-name') || '';
 
-        options.forEach(opt => {
-            opt.addEventListener('click', (e) => {
-                // 1. Estilos visuales
-                options.forEach(o => o.classList.remove('active'));
-                const target = e.target as HTMLElement;
+        // Estado inicial
+        let currentMeat = 2;
+        let currentCheese = 2;
+
+        const updateCardState = () => {
+            // 1. Calcular Extra
+            let extraCost = 0;
+            if (currentMeat === 3) extraCost += priceExtraMeat;
+            if (currentCheese === 3) extraCost += priceExtraCheese;
+
+            const finalPrice = basePrice + extraCost;
+
+            // 2. Construir Nombre
+            let details = [];
+            if (currentMeat === 3) details.push("TRIPLE CARNE");
+            if (currentCheese === 3) details.push("TRIPLE CHEDDAR");
+            
+            const finalName = details.length > 0 
+                ? `${baseName} (${details.join(' + ')})` 
+                : baseName;
+
+            // 3. Actualizar UI
+            if (displayPrice) displayPrice.textContent = `$${finalPrice}`;
+            
+            // 4. Actualizar Botón
+            if (addButton) {
+                addButton.setAttribute('data-price', finalPrice.toString());
+                addButton.setAttribute('data-name', finalName);
+            }
+        };
+
+        // Eventos Selectores
+        card.querySelectorAll('.btn-selector').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement; // Forzamos tipo
+                const type = target.getAttribute('data-type');
+                const qty = Number(target.getAttribute('data-qty'));
+
+                target.parentElement?.querySelectorAll('.btn-selector').forEach(b => b.classList.remove('active'));
                 target.classList.add('active');
 
-                // 2. Calcular Precio
-                const multiplier = Number(target.getAttribute('data-multiplier'));
-                let finalPrice = basePrice;
-                let nameSuffix = "";
-
-                if (multiplier === 2) {
-                    finalPrice = basePrice + EXTRA_MEAT_PRICE;
-                    nameSuffix = " (Doble)";
-                } else if (multiplier === 3) {
-                    finalPrice = basePrice + (EXTRA_MEAT_PRICE * 2);
-                    nameSuffix = " (Triple)";
-                }
-
-                // 3. Actualizar UI
-                if (displayPrice) displayPrice.textContent = `$${finalPrice}`;
-                
-                // 4. Actualizar datos del botón AGREGAR (Para que vaya bien al carrito)
-                if (addButton) {
-                    addButton.setAttribute('data-price', finalPrice.toString());
-                    addButton.setAttribute('data-name', `${originalName}${nameSuffix}`);
-                }
+                if (type === 'meat') currentMeat = qty;
+                if (type === 'cheese') currentCheese = qty;
+                updateCardState();
             });
         });
-    });
 
-    // 2. Lógica General de Agregar al Carrito (Igual que antes)
-    const buttons = document.querySelectorAll('.btn-add');
+        // Evento Agregar al Carrito
+        addButton?.addEventListener('click', () => {
+             const id = addButton.getAttribute('data-id');
+             const name = addButton.getAttribute('data-name');
+             const price = addButton.getAttribute('data-price');
 
-    buttons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const id = btn.getAttribute('data-id');
-            const name = btn.getAttribute('data-name');
-            const price = btn.getAttribute('data-price');
+             console.log("Intentando agregar:", name, price); // DEBUG EN CONSOLA
 
-            // Creamos un ID único compuesto si es una hamburguesa con variantes
-            // Esto evita que "Cancelada Simple" y "Cancelada Doble" se sumen como el mismo producto
-            let finalId = id;
-            if (name && name.includes('(')) {
-                finalId = `${id}-${name.split('(')[1].replace(')', '').toLowerCase()}`;
-            }
+             let uniqueId = id;
+             if (name && name.includes('(')) {
+                 const variantSuffix = name.split('(')[1].replace(')', '').replace(/\s|\+/g, '').toLowerCase();
+                 uniqueId = `${id}-${variantSuffix}`;
+             }
 
-            if (finalId && name && price) {
-                addProduct({
-                    id: finalId,
-                    name: name,
-                    price: Number(price)
-                });
-            }
+             if (uniqueId && name && price) {
+                 addProduct({
+                     id: uniqueId,
+                     name: name,
+                     price: Number(price)
+                 });
+             } else {
+                 console.error("Faltan datos para agregar al carrito");
+             }
         });
     });
 </script>
 
 <style>
-  /* ESTILOS BASE */
+  /* --- ESTILOS (IGUAL QUE ANTES) --- */
   .product-card {
     position: relative;
-    box-shadow: 6px 6px 0px var(--color-red);
-    background-color: var(--color-dark-gray);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: transform 0.1s, box-shadow 0.1s;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .product-card:active {
-    transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px var(--color-red);
-  }
-
-  .card-content {
-    padding: 1.5rem;
+    box-shadow: 8px 8px 0px var(--color-red, #dc2626);
+    background-color: #111; 
+    border: 2px solid #222;
     display: flex;
     flex-direction: column;
     height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .product-name {
-    font-size: 2rem;
-    margin: 0;
-    line-height: 0.9;
-    text-transform: uppercase;
-    color: var(--color-white);
-  }
-
-  .badge-new {
-    background-color: var(--color-red);
-    color: var(--color-black);
-    font-size: 0.7rem;
-    font-weight: bold;
-    padding: 2px 6px;
-    font-family: var(--font-sans);
-    letter-spacing: 1px;
-  }
-
-  .separator {
-    height: 2px;
-    width: 40px;
-    background-color: var(--color-red);
-    margin: 0.8rem 0 1rem 0;
-  }
-
-  .description {
-    color: var(--color-gray-text);
-    font-size: 0.95rem;
-    line-height: 1.4;
-    margin-bottom: 1rem; /* Reducido un poco para dar espacio al selector */
-    flex-grow: 1;
-  }
-
-  /* --- ESTILOS DEL SELECTOR DE CARNES --- */
-  .meat-selector {
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0,0,0,0.3);
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .selector-label {
-    font-size: 0.8rem;
-    color: #888;
-    font-weight: bold;
-  }
-
-  .options {
-    display: flex;
-    gap: 8px;
-  }
-
-  .btn-option {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: transparent;
-    border: 1px solid #555;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .btn-option:hover {
-    border-color: var(--color-red);
-    color: var(--color-red);
-  }
-
-  .btn-option.active {
-    background: var(--color-red);
-    border-color: var(--color-red);
-    color: black;
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
-  }
-  /* ------------------------------------- */
-
-  .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-top: auto;
-  }
-
-  .price {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: var(--color-white);
-    font-family: var(--font-sans);
-  }
-
-  .btn-add {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.4);
-    color: var(--color-white);
-    padding: 0.6rem 1.2rem;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-family: var(--font-sans);
-    transition: all 0.2s;
-  }
-  
-  .btn-add:hover {
-    background-color: var(--color-white);
-    color: var(--color-black);
-    border-color: var(--color-white);
-  }
+  .product-card:hover { border-color: var(--color-red, #dc2626); }
+  .card-upper { padding: 1.5rem 1.5rem 0 1.5rem; flex-grow: 1; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .product-name { font-size: 2.2rem; margin: 0; line-height: 0.9; text-transform: uppercase; color: white; font-weight: 900; }
+  .badge-new { background-color: var(--color-red, #dc2626); color: black; font-size: 0.7rem; font-weight: 900; padding: 4px 8px; letter-spacing: 1px; transform: rotate(5deg); }
+  .separator { height: 4px; width: 50px; background-color: var(--color-red, #dc2626); margin: 1rem 0; }
+  .description { color: #aaa; font-size: 0.95rem; line-height: 1.4; margin-bottom: 1.5rem; }
+  .customizer-panel { background-color: #0a0a0a; padding: 1rem 1.5rem; border-top: 2px solid var(--color-red, #dc2626); border-bottom: 1px solid #222; }
+  .panel-label { font-size: 0.7rem; color: #555; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
+  .selector-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .selector-row:last-child { margin-bottom: 0; }
+  .option-label { font-size: 0.9rem; color: var(--color-red, #dc2626); font-weight: 900; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; }
+  .option-buttons { display: flex; gap: 5px; background: #1a1a1a; padding: 3px; border-radius: 4px; border: 1px solid #333; }
+  .btn-selector { padding: 6px 12px; background: transparent; border: none; color: #777; font-size: 0.75rem; font-weight: bold; cursor: pointer; border-radius: 2px; transition: all 0.2s; }
+  .btn-selector:hover { color: white; }
+  .btn-selector.active { background-color: var(--color-red, #dc2626); color: black; font-weight: 900; box-shadow: 0 0 15px rgba(220, 38, 38, 0.4); }
+  .card-footer { padding: 1.5rem; background-color: #151515; border-top: 1px solid #222; }
+  .price-container { margin-bottom: 1rem; text-align: right; }
+  .price-label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 2px; }
+  .price { font-size: 2rem; font-weight: 900; color: white; letter-spacing: -1px; }
+  .btn-add-cart { width: 100%; background-color: var(--color-red, #dc2626); border: none; color: white; padding: 1rem; cursor: pointer; font-size: 1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; transition: all 0.2s; box-shadow: 0 4px 0px rgb(153, 27, 27); }
+  .btn-add-cart:hover { transform: translateY(2px); box-shadow: 0 2px 0px rgb(153, 27, 27); background-color: rgb(239, 68, 68); }
+  .btn-add-cart:active { transform: translateY(4px); box-shadow: none; }
 </style>

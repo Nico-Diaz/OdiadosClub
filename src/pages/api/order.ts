@@ -5,10 +5,10 @@ import { JWT } from 'google-auth-library';
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { items } = body; // Solo recibimos los items, el total lo calculamos nosotros
+    // Recibimos la lista de productos y el método de envío (Delivery/Take Away)
+    const { items, deliveryMethod } = body; 
 
-    // 1. Autenticación con Google
-    // Limpiamos la clave privada para evitar errores con los saltos de línea (\n)
+    // 1. Autenticación con Google (Seguridad para Vercel incluida)
     const privateKey = import.meta.env.GOOGLE_PRIVATE_KEY
       ? import.meta.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
       : undefined;
@@ -23,48 +23,51 @@ export const POST: APIRoute = async ({ request }) => {
 
     // 2. Cargar hoja
     await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0]; // La primera hoja del Excel
+    const sheet = doc.sheetsByIndex[0]; // Usamos la primera pestaña del Excel
 
-    // 3. Crear datos del pedido
+    // 3. Preparar Datos
     const orderId = `OD-${Math.floor(Math.random() * 10000)}`;
-    // Hora argentina
     const date = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
     
-    // --- CÁLCULO DEL TOTAL (BACKEND) ---
-    // Calculamos el precio aquí para que sea seguro y no llegue vacío
+    // --- CÁLCULO SEGURO DEL TOTAL ---
+    // El servidor hace la matemática para que nadie pueda trucar el precio
     const calculatedTotal = items.reduce((acc: number, item: any) => {
         return acc + (Number(item.price) * Number(item.quantity));
     }, 0);
 
-    // Formatear la lista de productos
+    // Formatear la lista de productos para que se lea bonito
     const itemsDetail = items.map((i: any) => `${i.quantity}x ${i.name}`).join('\n');
 
-    // 4. Guardar en Excel (Método Array para evitar errores de nombres)
-    // Orden: Columna A, Columna B, Columna C, Columna D, Columna E
+    // 4. Guardar en Google Sheets
+    // Columnas: A:ID, B:Fecha, C:Detalle, D:Total, E:Estado, F:Envío
     await sheet.addRow([
       orderId,
       date,
       itemsDetail,
-      `$${calculatedTotal}`, // Guardamos el total calculado
-      'Pendiente'
+      `$${calculatedTotal}`, // Precio formateado
+      'Pendiente',
+      deliveryMethod || 'No especificado' // Guardamos si es Delivery o Take Away
     ]);
 
-    // 5. Crear link de WhatsApp
-    const myPhone = "5492615084928"; 
+    // 5. Generar Mensaje de WhatsApp
+    const myPhone = "5492612461691"; 
     
-    // Usamos \n para los saltos de línea
+    // Elegimos el ícono según el método
+    const deliveryIcon = deliveryMethod === 'Delivery' ? '🛵' : '🥡';
+    const deliveryText = deliveryMethod === 'Delivery' ? 'ENVÍO A DOMICILIO' : 'RETIRO POR LOCAL (TAKE AWAY)';
+
     const message = 
-      ` *NUEVO PEDIDO BLACKLIST* \n\n` +
-      `Hola Odiados! Quiero confirmar mi orden *#${orderId}*.\n\n` +
-      ` *EL MENÚ ELEGIDO:*\n` +
-      `-----------------------------------\n` +
-      `${itemsDetail}\n` +
-      `-----------------------------------\n\n` +
-      ` *TOTAL FINAL: $${calculatedTotal}*\n\n` +
-      ` _Espero confirmación para enviar mi ubicación._`;
+      `💀 *NUEVO PEDIDO BLACKLIST* 💀\n\n` +
+      `Hola Odiados! Aquí los detalles de mi pedido *#${orderId}*.\n` +
+      `${deliveryIcon} *${deliveryText}*\n\n` +
+      `🔥 *EL MENÚ:*\n` +
+      `${itemsDetail}\n\n` +
+      `💰 *TOTAL: $${calculatedTotal}*\n\n` +
+      `_Espero confirmación para pagar._`;
 
     const whatsappUrl = `https://wa.me/${myPhone}?text=${encodeURIComponent(message)}`;
 
+    // 6. Responder al Frontend con éxito y el link
     return new Response(JSON.stringify({ 
       success: true, 
       redirectUrl: whatsappUrl 
