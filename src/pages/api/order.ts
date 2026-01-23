@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
     ]);
 
     // 5. Generar Mensaje de WhatsApp
-    const myPhone = "5492612461691"; 
+    const myPhone = "5492615084928"; 
     
     // Elegimos el ícono según el método
     const deliveryIcon = deliveryMethod === 'Delivery' ? '🛵' : '🥡';
