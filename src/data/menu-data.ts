@@ -12,7 +12,7 @@ export const menuData: Product[] = [
         id: '1',
         name: 'Public Enemy',
         description: 'Carne, queso cheddar, bacon, cebolla caramelizada, queso azul, salsa antipática.',
-        price: 12000,
+        price: 14000,
         category: 'blacklist',
         isNew: true
     },
@@ -34,7 +34,7 @@ export const menuData: Product[] = [
         id: '4',
         name: 'Cancelada',
         description: 'Carne, cheddar, salsa envidia, bacon.',
-        price: 14000,
+        price: 12000,
         category: 'blacklist'
     }
 ];
